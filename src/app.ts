@@ -33,7 +33,7 @@ app.use(
 const corsOptions = {
   origin:
     process.env.NODE_ENV === "production"
-      ? process.env.ALLOWED_ORIGINS?.split(",") || process.env.FRONTEND_URL
+      ? (process.env.ALLOWED_ORIGINS || process.env.FRONTEND_URL)?.split(",")
       : "*",
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   allowedHeaders: ["Content-Type", "Authorization"],
