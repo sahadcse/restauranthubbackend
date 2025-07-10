@@ -1,0 +1,122 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\user.prisma
+// file name: user.prisma
+// purpose: Defines models related to user management, including User, Address, Wishlist, and UserAudit.
+
+
+//-----------------------------------------------------------------------------
+// User Management
+//-----------------------------------------------------------------------------
+model User {
+  id                    String              @id @default(uuid()) @db.Uuid
+  email                 String              @unique
+  passwordHash          String              @map("password_hash")
+  role                  UserRole
+  firstName             String?             @map("first_name")
+  lastName              String?             @map("last_name")
+  phoneNumber           String?             @unique @map("phone_number") // Added unique constraint
+  lastLoginAt           DateTime?           @map("last_login_at")
+  accountStatus         AccountStatus       @default(PENDING_VERIFICATION) @map("account_status")
+  privacyConsent        Boolean             @default(false) @map("privacy_consent")
+  consentGivenAt        DateTime?           @map("consent_given_at")
+  sessions              Session[]
+  addresses             Address[]           // Relation to Address model
+
+
+  notifications         Notification[]
+  language              String?             @db.VarChar(2)
+  timezone              String?
+  twoFactorEnabled      Boolean             @default(false) @map("two_factor_enabled")
+  twoFactorSecret       String?             @map("two_factor_secret")
+  failedLoginAttempts   Int                 @default(0) @map("failed_login_attempts")
+  isActive              Boolean             @default(true) @map("is_active")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  attributes            Json?               @db.JsonB // For custom user attributes
+  audits                UserAudit[]         @relation("UserAudits")
+  ownedRestaurants      Restaurant[]        @relation("UserRestaurants")
+  orders                Order[]
+  wishlists             Wishlist[]
+  defaultCurrency       String?             @map("default_currency") @db.VarChar(3)
+  lastActivityAt        DateTime?           @map("last_activity_at")
+  loyaltyPoints         Int                 @default(0) @map("loyalty_points") // Consider moving to a dedicated LoyaltyUser model if complex
+  loyaltyTransactions   LoyaltyTransaction[] // Relation to Loyalty Transactions
+  cancellationRequests  OrderCancellation[] @relation("CancellationRequests")
+  cancellationApprovals OrderCancellation[] @relation("CancellationApprovals")
+  analyticsEvents       AnalyticsEvent[]
+  searchQueries         SearchQuery[]
+  supportTickets        SupportTicket[]     @relation("UserTickets") // Added relation name
+  supportResponses      SupportResponse[]   @relation("UserResponses") // Added relation name
+  menuItemUpdates       MenuItem[]          @relation("MenuItemUpdates") // Relation for lastUpdatedBy in MenuItem
+  menuItemReviews       MenuItemReview[]    // Relation for reviews by user
+  blogComments          BlogComment[]       @relation("UserBlogComments") // Comments written by the user
+  auditChanges          UserAudit[]         @relation("AuditChangers") // Audits performed by this user
+  feedback              Feedback[]          @relation("FeedbackUser") // Added relation name
+  assignedSupportTickets SupportTicket[]    @relation("SupportAssignments") // Added relation for SupportTicket assignee
+
+  orderAudits           OrderAudit[]        // Relation for order changes by user
+  drivers               Driver[]            // Relation if user can be a driver
+  blogPosts             BlogPost[]          @relation("UserBlogPosts") // Posts authored by the user
+  cart                  Cart?               // Relation to the user's shopping cart
+
+  @@map("users")
+  @@index([role]) // Added index
+  @@index([accountStatus]) // Added index
+  @@index([createdAt]) // Added index
+  @@index([email]) // Added index
+  @@index([phoneNumber]) // Added index
+  @@index([isActive]) // Added index
+  @@index([updatedAt]) // Added index
+}
+
+model UserAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  operation String   // e.g., 'CREATE', 'UPDATE', 'LOGIN', 'PASSWORD_RESET'
+  changedBy String?  @map("changed_by") @db.Uuid // User who performed the action (e.g., admin)
+  changes   Json?    @db.JsonB // Details of the changes made
+  ipAddress String?  @map("ip_address") // Added IP address
+  userAgent String?  @map("user_agent") // Added user agent
+  timestamp DateTime @default(now())
+  user      User     @relation("UserAudits", fields: [userId], references: [id])
+  changer   User?    @relation("AuditChangers", fields: [changedBy], references: [id]) // Relation to the user who made the change
+
+  @@map("user_audits")
+  @@index([userId]) // Added index
+  @@index([operation]) // Added index
+  @@index([timestamp]) // Added index
+}
+
+model Address {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  label      String?  // e.g., "Home", "Work"
+  street     String
+  city       String
+  state      String
+  postalCode String   @map("postal_code")
+  country    String
+  isDefault  Boolean  @default(false) @map("is_default")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id])
+  tenantId   String   @map("tenant_id") @db.Uuid // Assuming addresses might be tenant-specific
+
+  @@map("addresses")
+  @@index([userId])
+  @@index([tenantId])
+  @@index([isDefault]) // Added index
+}
+
+model Wishlist {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@unique([userId, menuItemId])
+  @@map("wishlists")
+  @@index([userId])
+  @@index([menuItemId]) // Added index
+}

@@ -1,0 +1,45 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\analytics.prisma
+// file name: analytics.prisma
+// purpose: Defines models for capturing analytics events and user search queries.
+
+
+//-----------------------------------------------------------------------------
+// Analytics & Reporting
+//-----------------------------------------------------------------------------
+model AnalyticsEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid // Optional: Link to user if logged in
+  eventType String   @map("event_type") // e.g., PAGE_VIEW, ADD_TO_CART, ORDER_PLACED
+  sessionId String? @map("session_id") @db.Uuid // Link to Session model if available
+  payload   Json     @db.JsonB // Event-specific data (e.g., page URL, item ID, order total)
+  timestamp DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  session   Session? @relation(fields: [sessionId], references: [id]) // Relation to Session
+  tenantId  String   @map("tenant_id") @db.Uuid
+
+  @@map("analytics_events")
+  @@index([eventType])
+  @@index([timestamp])
+  @@index([userId])
+  @@index([sessionId]) // Added index
+  @@index([tenantId])
+}
+
+model SearchQuery {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String?  @map("user_id") @db.Uuid // Optional: Link to user if logged in
+  query        String
+  resultsCount Int      @map("results_count")
+  filters      Json?    @db.JsonB // Filters applied (e.g., category, price range)
+  sessionId    String?  @map("session_id") @db.Uuid // Link to Session model
+  createdAt    DateTime @default(now()) @map("created_at")
+  user         User?    @relation(fields: [userId], references: [id])
+  session      Session? @relation(fields: [sessionId], references: [id]) // Relation to Session
+  tenantId     String   @map("tenant_id") @db.Uuid
+
+  @@map("search_queries")
+  @@index([userId])
+  @@index([sessionId]) // Added index
+  @@index([createdAt]) // Added index
+  @@index([tenantId])
+}

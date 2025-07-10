@@ -1,0 +1,221 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\schema\enums.prisma
+// file name: enums.prisma
+// purpose: Defines various enumerations used across different models in the schema.
+
+
+//-----------------------------------------------------------------------------
+// Core Business Enums
+//-----------------------------------------------------------------------------
+
+/// Status of an order throughout its lifecycle.
+enum OrderStatus {
+  PENDING   // Order placed, awaiting processing.
+  PREPARING // Order accepted, being prepared.
+  SHIPPED   // Order handed over for delivery (if applicable).
+  DELIVERED // Order successfully delivered/picked up.
+  CANCELLED // Order cancelled by user or system.
+  REFUNDED  // Order amount refunded.
+
+  @@map("order_status")
+}
+
+/// Status of a payment associated with an order.
+enum PaymentStatus {
+  PENDING            // Payment initiated, awaiting confirmation.
+  AUTHORIZED         // Payment authorized but not yet captured.
+  PAID               // Payment successfully completed.
+  FAILED             // Payment attempt failed.
+  REFUNDED           // Full payment amount refunded.
+  PARTIALLY_REFUNDED // Partial payment amount refunded.
+
+  @@map("payment_status")
+}
+
+/// Type of order fulfillment.
+enum OrderType {
+  DELIVERY // Order to be delivered to customer address.
+  PICKUP   // Order to be picked up by customer at the restaurant.
+  DINE_IN  // Order placed for dining within the restaurant.
+
+  @@map("order_type")
+}
+
+
+/// Status of the delivery process for an order.
+enum DeliveryStatus {
+  PENDING     // Delivery not yet assigned or started.
+  ASSIGNED    // Delivery assigned to a driver.
+  IN_TRANSIT  // Driver has picked up the order and is en route.
+  DELIVERED   // Delivery successfully completed.
+  CANCELLED   // Delivery was cancelled.
+  FAILED      // Delivery failed for some reason.
+
+  @@map("delivery_status")
+}
+
+/// Method used for payment.
+enum PaymentMethod {
+  CREDIT_CARD   // Payment via credit card.
+  DEBIT_CARD    // Payment via debit card.
+  PAYPAL        // Payment via PayPal.
+  STRIPE        // Payment via Stripe.
+  CASH          // Payment with cash (typically for pickup/dine-in).
+  BANK_TRANSFER // Payment via direct bank transfer.
+
+  @@map("payment_method")
+}
+
+/// Status of a return or refund request.
+enum ReturnStatus {
+  NONE      // No return requested.
+  REQUESTED // Return/refund has been requested by the customer.
+  APPROVED  // Return/refund request approved.
+  REJECTED  // Return/refund request rejected.
+  COMPLETED // Return/refund process completed (e.g., item returned, refund issued).
+
+  @@map("return_status")
+}
+
+/// Priority level, often used for orders or support tickets.
+enum PriorityLevel {
+  LOW    // Low priority.
+  NORMAL // Normal priority.
+  HIGH   // High priority.
+  URGENT // Urgent priority.
+
+  @@map("priority_level")
+}
+
+//-----------------------------------------------------------------------------
+// User & Account Enums
+//-----------------------------------------------------------------------------
+
+/// Role assigned to a user within the system.
+enum UserRole {
+  CUSTOMER          // Regular customer who places orders
+  RESTAURANT_OWNER  // Owner of one or more restaurants
+  RESTAURANT_STAFF  // Staff member working at a restaurant
+  DRIVER           // Delivery driver
+  ADMIN            // System administrator
+  SUPER_ADMIN      // Super administrator with full access
+
+  @@map("user_role")
+}
+
+/// Status of a user's account.
+enum AccountStatus {
+  ACTIVE    // Account is active and can be used
+  INACTIVE  // Account is temporarily disabled
+  SUSPENDED // Account is suspended due to violations
+  PENDING_VERIFICATION // Account created, awaiting verification (e.g., email).
+  DELETED   // Account has been deleted
+
+  @@map("account_status")
+}
+
+//-----------------------------------------------------------------------------
+// Feature Specific Enums
+//-----------------------------------------------------------------------------
+
+/// Type of feedback provided.
+enum FeedbackType {
+  RESTAURANT  // Feedback about a specific restaurant.
+  DELIVERY    // Feedback about the delivery experience.
+  MENU_ITEM   // Feedback about a specific menu item.
+  SERVICE     // General feedback about the platform or service.
+
+  @@map("feedback_type")
+}
+
+/// Channel through which a notification is sent.
+enum NotificationChannel {
+  EMAIL  // Notification sent via email.
+  SMS    // Notification sent via SMS text message.
+  PUSH   // Notification sent via mobile push notification.
+  IN_APP // Notification displayed within the application interface.
+
+  @@map("notification_channel")
+}
+
+/// Type or category of a notification.
+enum NotificationType {
+  ORDER_STATUS   // Updates about order progress.
+  PROMOTION      // Promotional messages or offers.
+  PASSWORD_RESET // Notifications related to password reset requests.
+  ACCOUNT_UPDATE // Notifications about changes to the user's account.
+  NEW_MESSAGE    // Notification about a new message (e.g., support chat).
+  SYSTEM_ALERT   // Important system-wide alerts.
+
+  @@map("notification_type")
+}
+
+/// Type of promotional activity.
+enum PromotionType {
+  BANNER   // Promotion displayed as a banner ad.
+  EMAIL    // Promotion sent via email campaign.
+  DISCOUNT // General discount offer (e.g., coupon code).
+  SOCIAL   // Promotion run on social media platforms.
+
+  @@map("promotion_type")
+}
+
+/// Unit of measurement for weight.
+enum WeightUnit {
+  GRAM     // Grams.
+  KILOGRAM // Kilograms.
+  OUNCE    // Ounces.
+  POUND    // Pounds.
+
+  @@map("weight_unit")
+}
+
+/// Status of inventory for a menu item or variant.
+enum InventoryStatus {
+  IN_STOCK     // Item is available in sufficient quantity.
+  LOW_STOCK    // Item quantity is low, may need restocking soon.
+  OUT_OF_STOCK // Item is currently unavailable.
+  DISCONTINUED // Item is no longer offered.
+
+  @@map("inventory_status")
+}
+
+/// Reason why an item is recommended.
+enum RecommendationReason {
+  POPULAR                 // Item is generally popular.
+  FREQUENTLY_BOUGHT_TOGETHER // Item often purchased with others in the cart.
+  AI_SUGGESTED            // Recommendation generated by an AI algorithm.
+  MANUAL                  // Manually curated recommendation.
+
+  @@map("recommendation_reason")
+}
+
+/// Type of transaction affecting loyalty points.
+enum LoyaltyTransactionType {
+  EARNED   // Points earned from a purchase or action.
+  REDEEMED // Points redeemed for a reward.
+  EXPIRED  // Points expired due to inactivity or time limit.
+  ADJUSTED // Manual adjustment of points balance (e.g., correction, bonus).
+
+  @@map("loyalty_transaction_type")
+}
+
+/// Status of an order cancellation request.
+enum OrderCancellationStatus {
+  REQUESTED // Cancellation has been requested.
+  APPROVED  // Cancellation request approved.
+  REJECTED  // Cancellation request rejected.
+
+  @@map("order_cancellation_status")
+}
+
+/// Type of link target for a slider item.
+enum SliderLinkType {
+  RESTAURANT   // Links to a specific restaurant page.
+  MENU_ITEM    // Links to a specific menu item details page.
+  CATEGORY     // Links to a specific category page.
+  CAMPAIGN     // Links to a promotional campaign page.
+  EXTERNAL_URL // Links to an external website.
+  NONE         // Slider item is not clickable or has no link.
+
+  @@map("slider_link_type")
+}

@@ -1,0 +1,42 @@
+// file path: e:\WORKS\PortfolioProjects\ProjectsPP\restaurant-ecommerce-hub\backend\prisma\cart.prisma
+// file name: cart.prisma
+// purpose: Defines models for persistent shopping cart storage.
+
+//-----------------------------------------------------------------------------
+// Cart Models
+//-----------------------------------------------------------------------------
+
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @unique @map("user_id") @db.Uuid // Each user has one cart
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  tenantId  String     @map("tenant_id") @db.Uuid // Assuming carts are tenant-specific
+
+  user      User       @relation(fields: [userId], references: [id])
+  items     CartItem[]
+
+  @@map("carts")
+  @@index([userId])
+  @@index([tenantId])
+  @@index([updatedAt]) // Useful for cleaning up old carts
+}
+
+model CartItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  cartId     String   @map("cart_id") @db.Uuid
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  variantId  String?  @map("variant_id") @db.Uuid // Optional: if the item has variants
+  quantity   Int
+  addedAt    DateTime @default(now()) @map("added_at")
+
+  cart       Cart             @relation(fields: [cartId], references: [id], onDelete: Cascade) // Cascade delete items if cart is deleted
+  menuItem   MenuItem         @relation(fields: [menuItemId], references: [id], name: "CartItem_MenuItem")
+  variant    MenuItemVariant? @relation(fields: [variantId], references: [id], name: "CartItem_Variant")
+
+  @@unique([cartId, menuItemId, variantId]) // Prevent duplicate items (with same variant or no variant) in the same cart
+  @@map("cart_items")
+  @@index([cartId])
+  @@index([menuItemId])
+  @@index([variantId])
+}

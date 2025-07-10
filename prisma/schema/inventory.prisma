@@ -1,0 +1,53 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\inventory.prisma
+// file name: inventory.prisma
+// purpose: Defines models for inventory management, including Inventory tracking and Supplier information.
+
+
+//-----------------------------------------------------------------------------
+// Inventory Management
+//-----------------------------------------------------------------------------
+model Inventory {
+  id               String           @id @default(uuid()) @db.Uuid
+  menuItemId       String           @map("menu_item_id") @db.Uuid
+  variantId        String?          @map("variant_id") @db.Uuid // Link to specific variant if applicable
+  quantity         Int
+  reorderThreshold Int              @map("reorder_threshold")
+  status           InventoryStatus  @default(IN_STOCK)
+  lastUpdated      DateTime         @updatedAt @map("last_updated")
+  supplierId       String?          @map("supplier_id") @db.Uuid
+  restaurantId     String           @map("restaurant_id") @db.Uuid
+  tenantId         String           @map("tenant_id") @db.Uuid
+  location         String?          // e.g., Shelf A, Fridge 2
+
+  menuItem         MenuItem         @relation(fields: [menuItemId], references: [id], name: "menuItemRelation")
+  variant          MenuItemVariant? @relation(fields: [variantId], references: [id])
+  supplier         Supplier?        @relation(fields: [supplierId], references: [id])
+  restaurant       Restaurant       @relation(fields: [restaurantId], references: [id])
+
+  @@unique([restaurantId, menuItemId, variantId]) // Ensure unique inventory entry per item/variant per restaurant
+  @@map("inventory")
+  @@index([menuItemId])
+  @@index([variantId]) // Added index
+  @@index([status])
+  @@index([tenantId])
+  @@index([restaurantId]) // Added index
+  @@index([quantity]) // Added index for stock level checks
+  @@index([supplierId]) // Added index
+}
+
+model Supplier {
+  id        String      @id @default(uuid()) @db.Uuid
+  name      String
+  email     String      @unique // Added unique constraint
+  phone     String?
+  address   Json?       @db.JsonB // Consider making this a structured relation to an Address model if needed elsewhere
+  isActive  Boolean     @default(true) @map("is_active")
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  inventory Inventory[]
+  tenantId  String      @map("tenant_id") @db.Uuid
+
+  @@map("suppliers")
+  @@index([tenantId])
+  @@index([isActive]) // Added index
+}

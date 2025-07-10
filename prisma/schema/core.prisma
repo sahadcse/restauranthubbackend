@@ -1,0 +1,584 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\schema\core.prisma
+// file name: core.prisma
+// purpose: Defines core business models like Restaurant, MenuItem, Category, Order, Payment, Delivery, etc.
+
+
+//-----------------------------------------------------------------------------
+// Core Business Models
+//-----------------------------------------------------------------------------
+// Restaurant Management
+model Restaurant {
+  id                   String         @id @default(uuid()) @db.Uuid
+  name                 String
+  imageUrl             String         @map("image_url")
+  restaurantPageUrl    String?        @unique @map("restaurant_page_url")
+  productCount         Int            @default(0) @map("product_count")
+  salesCount           Int            @default(0) @map("sales_count")
+  phone                String
+  email                String
+  address              String
+  description          String
+  createdAt            DateTime       @default(now()) @map("created_at")
+  menuItems            MenuItem[]
+  ownerId              String         @map("owner_id") @db.Uuid
+  owner                User           @relation("UserRestaurants", fields: [ownerId], references: [id])
+  orders               Order[]
+  isActive             Boolean        @default(true) @map("is_active")
+  timezone             String
+  currency             String         @db.VarChar(3)
+  location             Json           @db.JsonB
+  businessHours        Json           @map("business_hours") @db.JsonB
+  brandId              String?        @map("brand_id") @db.Uuid
+  theme                Json?          @db.JsonB
+  rating               Float          @default(0)
+  ratingCount          Int            @default(0) @map("rating_count")
+  deliveryFeeStructure Json?          @map("delivery_fee_structure") @db.JsonB
+  brand                Brand?         @relation(fields: [brandId], references: [id])
+  taxRates             TaxRate[]
+  menus                Menu[]
+  inventory            Inventory[]
+  // categories           Category[]
+
+  @@map("restaurants")
+  @@index([ownerId])
+  @@index([email])
+  @@index([timezone])
+  @@index([currency])
+  @@index([brandId])
+}
+
+model Brand {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  logoUrl     String     @map("logo_url")
+  description String?
+  websiteUrl  String?    @map("website_url")
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  menuItems   MenuItem[]
+  tenantId    String     @map("tenant_id") @db.Uuid
+  restaurants Restaurant[]
+
+  @@map("brands")
+  @@index([tenantId])
+}
+
+model Category {
+  id                 String     @id @default(uuid()) @db.Uuid
+  name               String
+  slug               String     @unique
+  description        String?
+  imageUrl           String?    @map("image_url")
+  isActive           Boolean    @default(true) @map("is_active")
+  order              Int        @default(0)
+  parentId           String?    @map("parent_id") @db.Uuid
+  parent             Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children           Category[] @relation("CategoryHierarchy")
+
+  restaurantId       String?     @map("restaurant_id") @db.Uuid
+  // restaurant         Restaurant @relation(fields: [restaurantId], references: [id])
+  menuItems          MenuItem[] // Items belonging to this category
+  discountPercentage Float?     @map("discount_percentage")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  @@map("categories")
+  @@index([restaurantId])
+  @@index([parentId])
+  @@index([slug]) // Added index
+  @@index([isActive]) // Added index
+  @@index([order]) // Added index
+}
+
+model MenuItem {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  title                String
+  description          String?
+  sku                  String                 @unique
+  finalPrice           Float                  @map("final_price")
+  mrp                  Float
+  discountPercentage   Float                  @map("discount_percentage")
+  stockStatus          InventoryStatus        @default(IN_STOCK) @map("stock_status") // Changed to use InventoryStatus enum
+  rating               Float
+  ratingCount          Int                    @map("rating_count")
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+  images               MenuItemImage[]
+  specifications       MenuItemSpecification[]
+  variants             MenuItemVariant[]
+  reviews              MenuItemReview[]
+  relatedMenuItems     RelatedMenuItem[]      @relation("SourceRelatedItems")
+  restaurant           Restaurant             @relation(fields: [restaurantId], references: [id])
+  restaurantId         String                 @map("restaurant_id") @db.Uuid
+  attributes           MenuItemAttribute[]    @relation("MenuItemAttributes")
+  audits               MenuItemAudit[]        @relation("MenuItemAudits")
+  orderItems           OrderItem[]
+  isActive             Boolean                @default(true) @map("is_active")
+  categoryId           String                 @map("category_id") @db.Uuid
+  currency             String                 @db.VarChar(3)
+  lastUpdatedBy        String                 @map("last_updated_by") @db.Uuid
+  availabilitySchedule Json?                  @map("availability_schedule") @db.JsonB
+  tags                 Tag[]                  @relation("MenuItemTags")
+  category             Category               @relation(fields: [categoryId], references: [id])
+  updatedByUser        User                   @relation("MenuItemUpdates", fields: [lastUpdatedBy], references: [id])
+  prepTime             Int?                   @map("prep_time")
+  isFeatured           Boolean                @default(false) @map("is_featured")
+  maxOrderQuantity     Int?                   @map("max_order_quantity")
+  minOrderQuantity     Int                    @default(1) @map("min_order_quantity")
+  allergens            Json?                  @db.JsonB
+  nutritionInfo        Json?                  @map("nutrition_info") @db.JsonB
+  tenantId             String                 @map("tenant_id") @db.Uuid
+  deletedAt            DateTime?              @map("deleted_at")
+  menuItemAllergens    MenuItemAllergen[]
+  brandId              String?                @map("brand_id") @db.Uuid
+  color                String?
+  weightUnit           WeightUnit
+  isVisible            Boolean                @default(true) @map("is_visible")
+  searchKeywords       Json?                  @map("search_keywords") @db.JsonB
+  taxRateId            String?                @map("tax_rate_id") @db.Uuid
+  brand                Brand?                 @relation(fields: [brandId], references: [id])
+  taxRate              TaxRate?               @relation(fields: [taxRateId], references: [id])
+  wishlists            Wishlist[]
+  priceHistory         MenuItemPriceHistory[]
+  recommendations      MenuItemRecommendation[] @relation("SourceRecommendations")
+  targetRecommendations MenuItemRecommendation[] @relation("TargetRecommendations")
+  menus                MenuItemsOnMenus[]     // Changed to many-to-many relation
+  sliders              MenuItemsOnSliders[]   // Added relation for Offer Section Sliders
+  cartItems            CartItem[]             @relation("CartItem_MenuItem") // Added relation name
+  relatedToItems       RelatedMenuItem[]      @relation("TargetRelatedItems") // Added relation for RelatedMenuItem
+  inventoryItems       Inventory[]            @relation("menuItemRelation") // Added relation name
+
+  // Deal of the Day related fields
+  dietaryLabel         String?                @map("dietary_label")
+  quantityLabel        String?                @map("quantity_label")
+  flags                String[]
+  dealSectionId        String?                @map("deal_section_id") @db.Uuid
+  dealSection          DealSection?           @relation(fields: [dealSectionId], references: [id])
+
+  // New Arrivals related fields
+  newArrivalsSectionId String?                @map("new_arrivals_section_id") @db.Uuid
+  newArrivalsSection   NewArrivalsSection?    @relation("SectionAllItems", fields: [newArrivalsSectionId], references: [id])
+  tabId                String?                @map("tab_id") @db.Uuid
+  tab                  Tab?                   @relation("TabItems", fields: [tabId], references: [id])
+
+  @@map("menu_items")
+  @@index([restaurantId])
+  @@index([sku])
+  @@index([stockStatus]) // Index on enum field
+  @@index([categoryId])
+  @@index([categoryId, isActive])
+  @@index([rating])
+  @@index([tenantId])
+  @@index([brandId])
+  @@index([color])
+  @@index([isVisible])
+  @@index([isActive]) // Added index
+  @@index([isFeatured]) // Added index
+  @@index([createdAt]) // Added index
+  @@index([updatedAt]) // Added index
+  @@index([dealSectionId])
+  @@index([newArrivalsSectionId])
+  @@index([tabId])
+}
+
+model MenuItemAudit {
+  id         String   @id @default(uuid()) @db.Uuid
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  menuItem   MenuItem @relation("MenuItemAudits", fields: [menuItemId], references: [id])
+
+  @@map("menu_item_audits")
+}
+
+model MenuItemVariant {
+  id           String                 @id @default(uuid()) @db.Uuid
+  menuItemId   String                 @map("menu_item_id") @db.Uuid
+  weight       String // Consider making this more structured (e.g., value + unit)
+  isActive     Boolean                @map("is_active")
+  createdAt    DateTime               @default(now()) @map("created_at")
+  menuItem     MenuItem               @relation(fields: [menuItemId], references: [id])
+  inventory    Inventory[] // Relation to Inventory
+  priceHistory MenuItemPriceHistory[] // Relation to Price History
+  cartItems    CartItem[]             @relation("CartItem_Variant") // Added relation name
+
+  @@map("menu_item_variants")
+  @@index([menuItemId])
+  @@index([isActive]) // Added index
+}
+
+model MenuItemImage {
+  id         String   @id @default(uuid()) @db.Uuid
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  imageUrl   String   @map("image_url")
+  isPrimary  Boolean  @map("is_primary")
+  createdAt  DateTime @default(now()) @map("created_at")
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  altText    String?  @map("alt_text")
+  order      Int      @default(0)
+
+  @@map("menu_item_images")
+  @@index([menuItemId])
+  @@index([isPrimary]) // Added index
+  @@index([order]) // Added index
+}
+
+model MenuItemSpecification {
+  id        String   @id @default(uuid()) @db.Uuid
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  specKey   String   @map("spec_key")
+  specValue String   @map("spec_value")
+  createdAt DateTime @default(now()) @map("created_at")
+  menuItem  MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@map("menu_item_specifications")
+  @@index([menuItemId]) // Added index
+}
+
+model MenuItemAttribute {
+  id         String   @id @default(uuid()) @db.Uuid
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  key        String
+  value      Json     @db.JsonB
+  language   String?  @db.VarChar(2)
+  menuItem   MenuItem @relation("MenuItemAttributes", fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@map("menu_item_attributes")
+  @@index([menuItemId]) // Added index
+}
+
+model MenuItemPriceHistory {
+  id                 String           @id @default(uuid()) @db.Uuid
+  menuItemId         String           @map("menu_item_id") @db.Uuid
+  variantId          String?          @map("variant_id") @db.Uuid
+  finalPrice         Float            @map("final_price")
+  mrp                Float
+  discountPercentage Float            @map("discount_percentage")
+  effectiveFrom      DateTime         @map("effective_from")
+  effectiveUntil     DateTime?        @map("effective_until")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  menuItem           MenuItem         @relation(fields: [menuItemId], references: [id])
+  variant            MenuItemVariant? @relation(fields: [variantId], references: [id])
+
+  @@map("menu_item_price_history")
+  @@index([menuItemId])
+  @@index([variantId]) // Added index
+}
+
+model MenuItemReview {
+  id           String   @id @default(uuid()) @db.Uuid
+  menuItemId   String   @map("menu_item_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid // Link to User model
+  userName     String   @map("user_name") // Keep for display, but link to user
+  userImageUrl String?  @map("user_image_url") // Keep for display, but link to user
+  rating       Float
+  comment      String
+  createdAt    DateTime @default(now()) @map("created_at")
+  menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
+  user         User     @relation(fields: [userId], references: [id]) // Relation to User
+
+  @@map("menu_item_reviews")
+  @@index([menuItemId]) // Added index
+  @@index([userId]) // Added index
+}
+
+model RelatedMenuItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  menuItemId      String   @map("menu_item_id") @db.Uuid // The item this relates TO
+  relatedItemId   String   @map("related_item_id") @db.Uuid // The item being recommended/related
+  createdAt       DateTime @default(now()) @map("created_at")
+  menuItem        MenuItem @relation("SourceRelatedItems", fields: [menuItemId], references: [id])
+  relatedItem     MenuItem @relation("TargetRelatedItems", fields: [relatedItemId], references: [id]) // Relation to the actual related MenuItem
+
+  @@map("related_menu_items")
+  @@index([menuItemId]) // Added index
+  @@index([relatedItemId]) // Added index
+  @@unique([menuItemId, relatedItemId]) // Ensure uniqueness
+}
+
+model Tag {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String     @unique
+  description String?
+  type        String
+  menuItems   MenuItem[] @relation("MenuItemTags")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@map("tags")
+  @@index([slug])
+  @@index([name]) // Added index
+  @@index([type]) // Added index
+}
+
+model Menu {
+  id           String             @id @default(uuid()) @db.Uuid
+  restaurantId String             @map("restaurant_id") @db.Uuid
+  name         String
+  description  String?
+  isActive     Boolean            @default(true) @map("is_active")
+  startTime    DateTime?          @map("start_time")
+  endTime      DateTime?          @map("end_time")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  restaurant   Restaurant         @relation(fields: [restaurantId], references: [id])
+  menuItems    MenuItemsOnMenus[] // Changed to many-to-many relation
+  tenantId     String             @map("tenant_id") @db.Uuid
+
+  @@map("menus")
+  @@index([restaurantId])
+  @@index([tenantId])
+  @@index([isActive]) // Added index
+  @@index([name]) // Added index
+}
+
+// Join table for Menu and MenuItem (Many-to-Many)
+model MenuItemsOnMenus {
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  menuId     String   @map("menu_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  order      Int?     // Optional display order within the menu
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  menu     Menu     @relation(fields: [menuId], references: [id])
+
+  @@id([menuItemId, menuId])
+  @@map("menu_items_on_menus")
+  @@index([menuId]) // Added index
+}
+
+// Model for representing recommendations between menu items
+model MenuItemRecommendation {
+  id               String               @id @default(uuid()) @db.Uuid
+  sourceMenuItemId String               @map("source_menu_item_id") @db.Uuid // The item for which the recommendation is shown
+  targetMenuItemId String               @map("target_menu_item_id") @db.Uuid // The item being recommended
+  reason           RecommendationReason @map("reason") // Why this item is recommended
+  score            Float?               // Optional score indicating recommendation strength
+  createdAt        DateTime             @default(now()) @map("created_at")
+
+  sourceMenuItem   MenuItem             @relation("SourceRecommendations", fields: [sourceMenuItemId], references: [id])
+  targetMenuItem   MenuItem             @relation("TargetRecommendations", fields: [targetMenuItemId], references: [id])
+
+  @@unique([sourceMenuItemId, targetMenuItemId]) // Prevent duplicate recommendations
+  @@map("menu_item_recommendations")
+  @@index([sourceMenuItemId])
+  @@index([targetMenuItemId])
+  @@index([reason])
+}
+
+//-----------------------------------------------------------------------------
+// Order Management
+//-----------------------------------------------------------------------------
+model Order {
+  id                    String              @id @default(uuid()) @db.Uuid
+  userId                String              @map("user_id") @db.Uuid
+  restaurantId          String              @map("restaurant_id") @db.Uuid
+  status                OrderStatus         @default(PENDING)
+  paymentStatus         PaymentStatus       @default(PENDING) @map("payment_status")
+  subtotal              Float
+  tax                   Float
+  deliveryFee           Float               @map("delivery_fee")
+  discount              Float
+  total                 Float
+  notes                 String?
+  deliveryAddress       Json?               @map("delivery_address") @db.JsonB // Consider linking to Address model
+  estimatedDeliveryTime DateTime?           @map("estimated_delivery_time")
+  actualDeliveryTime    DateTime?           @map("actual_delivery_time")
+  cancelReason          String?             @map("cancel_reason")
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+  orderType             OrderType           @default(DELIVERY) @map("order_type")
+  deliveryInstructions  String?             @map("delivery_instructions")
+  source                String?
+  priority              PriorityLevel?      // Changed String? to PriorityLevel?
+  correlationId         String              @unique @default(uuid()) @map("correlation_id") @db.Uuid // Added unique and default
+  tenantId              String              @map("tenant_id") @db.Uuid
+  delivery              Delivery?
+  feedback              Feedback[]
+  supportTickets        SupportTicket[]
+  payments              Payment[]           // Added relation to Payment
+  loyaltyTransactions   LoyaltyTransaction[] // Added relation to LoyaltyTransaction
+
+  // Relations
+  user                  User                @relation(fields: [userId], references: [id])
+  restaurant            Restaurant          @relation(fields: [restaurantId], references: [id])
+  items                 OrderItem[]
+  audits                OrderAudit[]
+  cancellations         OrderCancellation[]
+
+  @@map("orders")
+  @@index([userId]) // Added index
+  @@index([restaurantId]) // Added index
+  @@index([status]) // Added index
+  @@index([paymentStatus]) // Added index
+  @@index([orderType])
+  @@index([tenantId])
+  @@index([createdAt]) // Added index for time-based queries
+  @@index([updatedAt]) // Added index
+}
+
+model OrderItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  orderId    String   @map("order_id") @db.Uuid
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  quantity   Int
+  unitPrice  Float    @map("unit_price") // Price at the time of order
+  subtotal   Float    // quantity * unitPrice
+  notes      String?
+
+  // Relations
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@map("order_items")
+  @@index([orderId]) // Added index
+  @@index([menuItemId]) // Added index
+}
+
+model OrderAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @map("order_id") @db.Uuid
+  operation String   // CREATE, UPDATE, STATUS_CHANGE, etc.
+  changedBy String   @map("changed_by") @db.Uuid // Link to User ID
+  changes   Json     @db.JsonB
+  timestamp DateTime @default(now())
+
+  // Relations
+  order     Order    @relation(fields: [orderId], references: [id])
+  changer   User     @relation(fields: [changedBy], references: [id]) // Relation to User
+
+  @@map("order_audits")
+  @@index([orderId]) // Added index
+  @@index([changedBy]) // Added index
+  @@index([timestamp]) // Added index
+}
+
+model Payment {
+  id              String        @id @default(uuid()) @db.Uuid
+  orderId         String        @map("order_id") @db.Uuid
+  amount          Float
+  currency        String        @db.VarChar(3)
+  method          PaymentMethod
+  status          PaymentStatus
+  transactionId   String?       @unique @map("transaction_id") // Added unique constraint
+  gatewayResponse Json?         @map("gateway_response") @db.JsonB
+  refundStatus    ReturnStatus? @map("refund_status") // Changed String? to ReturnStatus?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  order           Order         @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+  @@index([orderId])
+  @@index([status]) // Added index
+  @@index([method]) // Added index
+  @@index([transactionId])
+  @@index([createdAt]) // Added index
+}
+
+model Delivery {
+  id          String         @id @default(uuid()) @db.Uuid
+  orderId     String         @unique @map("order_id") @db.Uuid
+  driverId    String?        @map("driver_id") @db.Uuid // Made optional, might not be assigned immediately
+  status      DeliveryStatus
+  trackingUrl String?        @map("tracking_url")
+  assignedAt  DateTime?      @map("assigned_at") // Made optional
+  pickedUpAt  DateTime?      @map("picked_up_at") // Added pickup time
+  completedAt DateTime?      @map("completed_at")
+  order       Order          @relation(fields: [orderId], references: [id])
+  driver      Driver?        @relation(fields: [driverId], references: [id]) // Made optional
+  tenantId    String         @map("tenant_id") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at") // Added createdAt
+
+  @@map("deliveries")
+  @@index([driverId]) // Added index
+  @@index([status])
+  @@index([tenantId])
+  @@index([createdAt]) // Added index
+}
+
+model Driver {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @unique @map("user_id") @db.Uuid
+  vehicleInfo Json?      @map("vehicle_info") @db.JsonB
+  isActive    Boolean    @default(true) @map("is_active")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  deliveries  Delivery[]
+  tenantId    String     @map("tenant_id") @db.Uuid
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@map("drivers")
+  @@index([tenantId])
+  @@index([isActive])
+  @@index([userId]) // Added index
+}
+
+model OrderCancellation {
+  id          String                  @id @default(uuid()) @db.Uuid
+  orderId     String                  @map("order_id") @db.Uuid
+  reason      String
+  requestedBy String                  @map("requested_by") @db.Uuid
+  approvedBy  String?                 @map("approved_by") @db.Uuid
+  status      OrderCancellationStatus @default(REQUESTED) @map("status") // Changed to use enum
+  createdAt   DateTime                @default(now()) @map("created_at")
+  order       Order                   @relation(fields: [orderId], references: [id])
+  requester   User                    @relation("CancellationRequests", fields: [requestedBy], references: [id])
+  approver    User?                   @relation("CancellationApprovals", fields: [approvedBy], references: [id])
+
+  @@map("order_cancellations")
+  @@index([orderId])
+  @@index([status])
+  @@index([requestedBy])
+}
+
+//-----------------------------------------------------------------------------
+// Product Features (Moved from separate section)
+//-----------------------------------------------------------------------------
+model Allergen {
+  id          String             @id @default(uuid()) @db.Uuid
+  name        String             @unique
+  description String?
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  menuItems   MenuItemAllergen[]
+  tenantId    String             @map("tenant_id") @db.Uuid
+
+  @@map("allergens")
+  @@index([tenantId])
+  @@index([name]) // Added index
+}
+
+model MenuItemAllergen {
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  allergenId String   @map("allergen_id") @db.Uuid
+  createdAt  DateTime @default(now()) @map("created_at")
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  allergen   Allergen @relation(fields: [allergenId], references: [id])
+
+  @@id([menuItemId, allergenId])
+  @@map("menu_item_allergens")
+  @@index([allergenId]) // Added index
+}
+
+model TaxRate {
+  id            String     @id @default(uuid()) @db.Uuid
+  name          String
+  rate          Float      // Percentage (e.g., 0.05 for 5%)
+  region        String?    // e.g., State, Country, City
+  effectiveFrom DateTime   @map("effective_from")
+  isActive      Boolean    @default(true) @map("is_active")
+  restaurantId  String?    @map("restaurant_id") @db.Uuid // Can be null for global/regional rates
+  tenantId      String     @map("tenant_id") @db.Uuid // Added tenant ID
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  menuItems     MenuItem[]
+  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id])
+
+  @@map("tax_rates")
+  @@index([restaurantId])
+  @@index([tenantId]) // Added index
+  @@index([isActive]) // Added index
+  @@index([name]) // Added index
+}
+
+

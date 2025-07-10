@@ -1,0 +1,66 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\support.prisma
+// file name: support.prisma
+// purpose: Defines models for the customer support ticketing system and responses.
+
+
+//-----------------------------------------------------------------------------
+// Support & Customer Service
+//-----------------------------------------------------------------------------
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  WAITING_FOR_CUSTOMER
+  WAITING_FOR_SUPPORT
+
+  @@map("support_ticket_status")
+}
+
+model SupportTicket {
+  id          String              @id @default(uuid()) @db.Uuid
+  userId      String              @map("user_id") @db.Uuid // User who created the ticket
+  orderId     String?             @map("order_id") @db.Uuid // Optional link to a specific order
+  subject     String
+  description String
+  status      SupportTicketStatus @default(OPEN) // Use the enum
+  priority    PriorityLevel       @default(NORMAL) // Use the enum
+  assignedTo  String?             @map("assigned_to") @db.Uuid // User ID of the support agent
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+  resolvedAt  DateTime?           @map("resolved_at") // Added resolved timestamp
+  closedAt    DateTime?           @map("closed_at") // Added closed timestamp
+  tenantId    String              @map("tenant_id") @db.Uuid // Added tenant ID
+
+  user        User                @relation("UserTickets", fields: [userId], references: [id])
+  order       Order?              @relation(fields: [orderId], references: [id])
+  assignee    User?               @relation("SupportAssignments", fields: [assignedTo], references: [id]) // Relation to assignee
+  responses   SupportResponse[]
+
+  @@map("support_tickets")
+  @@index([userId])
+  @@index([orderId]) // Added index
+  @@index([status])
+  @@index([priority]) // Added index
+  @@index([assignedTo]) // Added index
+  @@index([tenantId]) // Added index
+  @@index([createdAt]) // Added index
+  @@index([updatedAt]) // Added index
+}
+
+model SupportResponse {
+  id          String    @id @default(uuid()) @db.Uuid
+  ticketId    String    @map("ticket_id") @db.Uuid
+  responderId String    @map("responder_id") @db.Uuid // User ID of the responder (customer or agent)
+  message     String
+  isInternal  Boolean   @default(false) @map("is_internal") // Flag for internal notes vs customer replies
+  attachments Json?     @db.JsonB // Store attachment metadata (e.g., URLs, filenames)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id])
+  responder   User      @relation("UserResponses", fields: [responderId], references: [id])
+
+  @@map("support_responses")
+  @@index([ticketId])
+  @@index([responderId]) // Added index
+  @@index([createdAt]) // Added index
+}

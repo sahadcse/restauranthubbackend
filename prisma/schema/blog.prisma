@@ -1,0 +1,116 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\blog.prisma
+// file name: blog.prisma
+// purpose: Defines models related to the blog feature, including posts, categories, tags, and comments.
+
+//-----------------------------------------------------------------------------
+// Blog System Models
+//-----------------------------------------------------------------------------
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("blog_post_status")
+}
+
+model BlogCategory {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  posts       BlogPost[]
+  tenantId    String?    @map("tenant_id") @db.Uuid // Optional: If categories are tenant-specific
+
+  @@map("blog_categories")
+  @@index([tenantId])
+  @@index([slug])
+}
+
+model BlogPost {
+  id             String           @id @default(uuid()) @db.Uuid
+  title          String
+  slug           String           @unique
+  content        String           @db.Text // Use Text for potentially long content
+  excerpt        String?          // Short summary
+  imageUrl       String?          @map("image_url")
+  status         BlogPostStatus   @default(DRAFT)
+  publishedAt    DateTime?        @map("published_at")
+  authorId       String           @map("author_id") @db.Uuid
+  categoryId     String?          @map("category_id") @db.Uuid
+  views          Int              @default(0)
+  allowComments  Boolean          @default(true) @map("allow_comments")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  tenantId       String?          @map("tenant_id") @db.Uuid // Optional: If posts are tenant-specific
+
+  author         User             @relation("UserBlogPosts", fields: [authorId], references: [id])
+  category       BlogCategory?    @relation(fields: [categoryId], references: [id])
+  comments       BlogComment[]
+  tags           BlogPostsOnTags[]
+
+  @@map("blog_posts")
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([publishedAt])
+  @@index([tenantId])
+  @@index([slug])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+model BlogTag {
+  id          String            @id @default(uuid()) @db.Uuid
+  name        String            @unique
+  slug        String            @unique
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  posts       BlogPostsOnTags[]
+  tenantId    String?           @map("tenant_id") @db.Uuid // Optional: If tags are tenant-specific
+
+  @@map("blog_tags")
+  @@index([tenantId])
+  @@index([slug])
+}
+
+// Join table for BlogPost and BlogTag (Many-to-Many)
+model BlogPostsOnTags {
+  postId String   @map("post_id") @db.Uuid
+  tagId  String   @map("tag_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  post BlogPost @relation(fields: [postId], references: [id])
+  tag  BlogTag  @relation(fields: [tagId], references: [id])
+
+  @@id([postId, tagId])
+  @@map("blog_posts_on_tags")
+  @@index([tagId])
+}
+
+model BlogComment {
+  id          String       @id @default(uuid()) @db.Uuid
+  postId      String       @map("post_id") @db.Uuid
+  authorId    String       @map("author_id") @db.Uuid // User who wrote the comment
+  content     String
+  parentId    String?      @map("parent_id") @db.Uuid // For nested comments/replies
+  isApproved  Boolean      @default(true) @map("is_approved") // Moderation status
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  tenantId    String?      @map("tenant_id") @db.Uuid // Optional: If comments are tenant-specific
+
+  post        BlogPost     @relation(fields: [postId], references: [id])
+  author      User         @relation("UserBlogComments", fields: [authorId], references: [id])
+  parent      BlogComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     BlogComment[] @relation("CommentReplies")
+
+  @@map("blog_comments")
+  @@index([postId])
+  @@index([authorId])
+  @@index([parentId])
+  @@index([isApproved])
+  @@index([tenantId])
+  @@index([createdAt])
+}

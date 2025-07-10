@@ -1,0 +1,50 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\notifications.prisma
+// file name: notifications.prisma
+// purpose: Defines models for the notification system and user feedback.
+
+//-----------------------------------------------------------------------------
+// Notification System
+//-----------------------------------------------------------------------------
+model Notification {
+  id        String              @id @default(uuid()) @db.Uuid
+  userId    String              @map("user_id") @db.Uuid
+  type      NotificationType    // Changed from String to NotificationType enum
+  channel   NotificationChannel @map("channel") // Use the enum
+  title     String
+  message   String
+  isRead    Boolean             @default(false) @map("is_read")
+  readAt    DateTime?           @map("read_at") // Added timestamp for when it was read
+  metadata  Json?               @db.JsonB // e.g., { "orderId": "...", "promotionCode": "..." }
+  createdAt DateTime            @default(now()) @map("created_at")
+  user      User                @relation(fields: [userId], references: [id])
+  tenantId  String              @map("tenant_id") @db.Uuid // Added tenant ID
+
+  @@map("notifications")
+  @@index([userId])
+  @@index([type])
+  @@index([channel]) // Added index
+  @@index([isRead]) // Added index
+  @@index([createdAt]) // Added index
+  @@index([tenantId]) // Added index
+}
+
+model Feedback {
+  id        String       @id @default(uuid()) @db.Uuid
+  orderId   String       @map("order_id") @db.Uuid
+  userId    String       @map("user_id") @db.Uuid // Added user relation
+  type      FeedbackType // Use the enum
+  comment   String?      // Made optional
+  rating    Int          // Changed from Float to Int (assuming whole stars)
+  createdAt DateTime     @default(now()) @map("created_at")
+  order     Order        @relation(fields: [orderId], references: [id])
+  user      User         @relation(fields: [userId], references: [id], name: "FeedbackUser") // Relation to User
+  tenantId  String       @map("tenant_id") @db.Uuid // Added tenant ID
+
+  @@map("feedbacks")
+  @@index([orderId]) // Added index
+  @@index([userId]) // Added index
+  @@index([type]) // Added index
+  @@index([rating]) // Added index
+  @@index([createdAt]) // Added index
+  @@index([tenantId]) // Added index for tenantId
+}

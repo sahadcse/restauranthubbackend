@@ -1,0 +1,223 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\content.prisma
+// file name: content.prisma
+// purpose: Defines models related to website content management, like sliders, banners, and promotional sections.
+
+
+//-----------------------------------------------------------------------------
+// Content Management Models
+//-----------------------------------------------------------------------------
+
+model HeroSlider {
+  id          String         @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  imageUrl    String         @map("image_url")
+  price       Float?         // Added: Starting price
+  buttonText  String?        @map("button_text") // Added: Button label
+  linkUrl     String?        @map("link_url") // URL for the campaign, page, restaurant, etc.
+  linkType    SliderLinkType @default(NONE) @map("link_type") // Type of link (e.g., RESTAURANT, CAMPAIGN)
+  linkTargetId String?       @map("link_target_id") @db.Uuid // Optional: ID of the linked entity (e.g., Restaurant ID, MenuItem ID)
+  displayOrder Int           @default(0) @map("display_order") // Order in which sliders appear
+  isActive    Boolean        @default(true) @map("is_active")
+  startDate   DateTime?      @map("start_date") // Optional: When the slider becomes active
+  endDate     DateTime?      @map("end_date") // Optional: When the slider expires
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  tenantId    String?        @map("tenant_id") @db.Uuid // Optional: If sliders are tenant-specific
+
+  @@map("hero_sliders")
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([tenantId])
+  @@index([startDate, endDate])
+  @@index([linkType]) // Added index
+  @@index([updatedAt]) // Added index
+}
+
+// Model for "Deal of the Day" sections
+model DealSection {
+  id           String     @id @default(uuid()) @db.Uuid
+  title        String     // e.g., "Day of the deal"
+  subtitle     String?    // e.g., "Don't wait. The time will never be just right."
+  timerDays    Int?       @map("timer_days") // Optional countdown days
+  timerHours   Int?       @map("timer_hours") // Optional countdown hours
+  timerMinutes Int?       @map("timer_minutes") // Optional countdown minutes
+  isActive     Boolean    @default(true) @map("is_active") // Added active status
+  startDate    DateTime?  @map("start_date") // Optional: When the deal becomes active
+  endDate      DateTime?  @map("end_date") // Optional: When the deal expires
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  tenantId     String?    @map("tenant_id") @db.Uuid // Optional: If deals are tenant-specific
+  menuItems    MenuItem[] // Relation to menu items included in this deal
+
+  @@map("deal_sections")
+  @@index([isActive])
+  @@index([tenantId])
+  @@index([startDate, endDate])
+  @@index([updatedAt]) // Added index
+}
+
+// Model for general promotional banners
+model Banner {
+  id         String    @id @default(uuid()) @db.Uuid
+  title      String    // e.g., "Fresh Fruits Healthy Products"
+  subtitle   String?   // e.g., "30% off sale"
+  imageUrl   String?   @map("image_url") // Added: Image for the banner
+  hurryText  String?   @map("hurry_text") // Optional: e.g., "Hurry up!!!"
+  buttonText String?   @map("button_text") // e.g., "Shop now"
+  buttonLink String?   @map("button_link") // e.g., "shop-left-sidebar-col-3.html" or internal link
+  linkType   SliderLinkType? @map("link_type") // Optional: Reuse SliderLinkType for consistency
+  linkTargetId String?  @map("link_target_id") @db.Uuid // Optional: ID of linked entity
+  isActive   Boolean   @default(true) @map("is_active") // Added active status
+  startDate  DateTime? @map("start_date") // Optional: When the banner becomes active
+  endDate    DateTime? @map("end_date") // Optional: When the banner expires
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  tenantId   String?   @map("tenant_id") @db.Uuid // Optional: If banners are tenant-specific
+
+  @@map("banners")
+  @@index([isActive])
+  @@index([tenantId])
+  @@index([startDate, endDate])
+  @@index([linkType]) // Added index
+  @@index([updatedAt]) // Added index
+}
+
+// Model for Offer Banners (e.g., "Tasty Snack & Fastfood" type)
+model OfferBanner {
+  id           String         @id @default(uuid()) @db.Uuid
+  discount     String         // e.g., "70% Off"
+  image        String         // URL or path to the banner image
+  title        String         // e.g., "Tasty Snack & Fastfood"
+  subtitle     String         // e.g., "The flavor of something special"
+  buttonText   String         @map("button_text") // e.g., "Shop Now"
+  buttonLink   String         @map("button_link") // URL or path for the button link
+  linkType     SliderLinkType? @map("link_type") // Optional: Reuse SliderLinkType for consistency
+  linkTargetId String?        @map("link_target_id") @db.Uuid // Optional: ID of linked entity
+  isActive     Boolean        @default(true) @map("is_active")
+  startDate    DateTime?      @map("start_date") // Optional: When the banner becomes active
+  endDate      DateTime?      @map("end_date") // Optional: When the banner expires
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  tenantId     String?        @map("tenant_id") @db.Uuid // Optional: If banners are tenant-specific
+
+  @@map("offer_banners")
+  @@index([isActive])
+  @@index([tenantId])
+  @@index([startDate, endDate])
+  @@index([linkType])
+  @@index([updatedAt])
+}
+
+// Model for "New Arrivals" sections
+model NewArrivalsSection {
+  id        String     @id @default(uuid()) @db.Uuid
+  title     String     // e.g., "New Arrivals"
+  subtitle  String?    // e.g., "Shop online for new arrivals and get free shipping!"
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+  tenantId  String?    @map("tenant_id") @db.Uuid // Optional: If sections are tenant-specific
+  tabs      Tab[]      // Relation to tabs within this section
+  menuItems MenuItem[] @relation("SectionAllItems") // Relation for items shown directly under the section (e.g., "All" tab)
+
+  @@map("new_arrivals_sections")
+  @@index([isActive])
+  @@index([tenantId])
+  @@index([updatedAt]) // Added index
+}
+
+// Model for tabs within the New Arrivals section
+model Tab {
+  id        String             @id @default(uuid()) @db.Uuid
+  name      String             // e.g., "All", "Snack & Spices", "Fruits"
+  order     Int                @default(0) // Added display order for tabs
+  sectionId String             @map("section_id") @db.Uuid
+  section   NewArrivalsSection @relation(fields: [sectionId], references: [id])
+  isActive  Boolean            @default(true) @map("is_active") // Added active status
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+  tenantId  String?            @map("tenant_id") @db.Uuid // Optional: If tabs are tenant-specific
+  menuItems MenuItem[]         @relation("TabItems") // Relation to items specific to this tab
+
+  @@map("new_arrivals_tabs")
+  @@index([sectionId])
+  @@index([isActive])
+  @@index([tenantId])
+  @@index([order])
+  @@index([name]) // Added index
+}
+
+//-----------------------------------------------------------------------------
+// Offer Section Models
+//-----------------------------------------------------------------------------
+
+model OfferSection {
+  id        String               @id @default(uuid()) @db.Uuid
+  isActive  Boolean              @default(true) @map("is_active")
+  createdAt DateTime             @default(now()) @map("created_at")
+  updatedAt DateTime             @updatedAt @map("updated_at")
+  tenantId  String?              @map("tenant_id") @db.Uuid // Optional: If sections are tenant-specific
+  banner    OfferSectionBanner? // Relation to the specific banner for this section
+  sliders   Slider[]             // Relation to the sliders within this section
+
+  @@map("offer_sections")
+  @@index([isActive])
+  @@index([tenantId])
+  @@index([updatedAt])
+}
+
+model OfferSectionBanner {
+  id             String       @id @default(uuid()) @db.Uuid
+  title          String       // e.g., "Our top most products check it now"
+  buttonText     String       @map("button_text") // e.g., "Shop Now"
+  buttonLink     String       @map("button_link") // e.g., "shop-left-sidebar-col-3.html"
+  offerSectionId String       @unique @map("offer_section_id") @db.Uuid // Foreign key to OfferSection
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  tenantId       String?      @map("tenant_id") @db.Uuid // Optional: If banners are tenant-specific
+  offerSection   OfferSection @relation(fields: [offerSectionId], references: [id])
+
+  @@map("offer_section_banners")
+  @@index([offerSectionId])
+  @@index([isActive])
+  @@index([tenantId])
+  @@index([updatedAt])
+}
+
+model Slider {
+  id             String               @id @default(uuid()) @db.Uuid
+  title          String               // e.g., "Trending Items", "Top Rated", "Top Selling"
+  offerSectionId String               @map("offer_section_id") @db.Uuid // Foreign key to OfferSection
+  displayOrder   Int                  @default(0) @map("display_order")
+  isActive       Boolean              @default(true) @map("is_active")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  tenantId       String?              @map("tenant_id") @db.Uuid // Optional: If sliders are tenant-specific
+  offerSection   OfferSection         @relation(fields: [offerSectionId], references: [id])
+  menuItems      MenuItemsOnSliders[] // Relation to the join table for MenuItems
+
+  @@map("sliders")
+  @@index([offerSectionId])
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([tenantId])
+  @@index([updatedAt])
+}
+
+// Join table for Slider and MenuItem (Many-to-Many)
+model MenuItemsOnSliders {
+  menuItemId String   @map("menu_item_id") @db.Uuid
+  sliderId   String   @map("slider_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  order      Int?     // Optional display order within the slider
+
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  slider   Slider   @relation(fields: [sliderId], references: [id])
+
+  @@id([menuItemId, sliderId])
+  @@map("menu_items_on_sliders")
+  @@index([sliderId])
+  @@index([menuItemId]) // Added index for querying by menu item
+}

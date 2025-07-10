@@ -1,0 +1,54 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\security.prisma
+// file name: security.prisma
+// purpose: Defines models related to security, access control (roles/permissions), and user sessions.
+
+
+//-----------------------------------------------------------------------------
+// Security & Access Control
+//-----------------------------------------------------------------------------
+model Permission {
+  id             String           @id @default(uuid()) @db.Uuid
+  name           String           @unique // e.g., "manage:orders", "view:users"
+  description    String?
+  category       String           // e.g., "Order Management", "User Management"
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  rolePermissions RolePermission[] // Renamed from 'roles' for clarity
+
+  @@map("permissions")
+  @@index([category])
+}
+
+model RolePermission {
+  role         UserRole   // Use the existing UserRole enum
+  permissionId String     @map("permission_id") @db.Uuid
+  grantedAt    DateTime   @default(now()) @map("granted_at")
+  permission   Permission @relation(fields: [permissionId], references: [id])
+  // No need for a separate Role model if UserRole enum suffices
+
+  @@id([role, permissionId])
+  @@map("role_permissions")
+  @@index([permissionId])
+  @@index([role]) // Added index
+}
+
+model Session {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @map("user_id") @db.Uuid
+  token        String           @unique // The primary session token (e.g., JWT ID)
+  refreshToken String?          @unique @map("refresh_token") // Optional refresh token
+  ipAddress    String?          @map("ip_address") // Made optional
+  deviceInfo   Json?            @map("device_info") @db.JsonB // Made optional
+  expiresAt    DateTime         @map("expires_at")
+  revokedAt    DateTime?        @map("revoked_at")
+  createdAt    DateTime         @default(now()) @map("created_at")
+  user         User             @relation(fields: [userId], references: [id])
+  analyticsEvents AnalyticsEvent[] // Relation to Analytics Events
+  searchQueries   SearchQuery[]    // Relation to Search Queries
+
+  @@map("sessions")
+  @@index([userId])
+  @@index([token])
+  @@index([refreshToken]) // Added index
+  @@index([expiresAt]) // Added index for cleanup tasks
+}

@@ -1,0 +1,51 @@
+// file path: restaurant-ecommerce-hub\backend\prisma\loyalty.prisma
+// file name: loyalty.prisma
+// purpose: Defines models for the customer loyalty program and related transactions.
+
+
+//-----------------------------------------------------------------------------
+// Loyalty & Promotions
+//-----------------------------------------------------------------------------
+model LoyaltyProgram {
+  id              String               @id @default(uuid()) @db.Uuid
+  name            String
+  description     String?              // Added description
+  pointsPerDollar Float                @map("points_per_dollar")
+  rewardThreshold Int                  @map("reward_threshold") // Points needed for a reward
+  rewardType      String               @map("reward_type") // e.g., DISCOUNT_PERCENT, FIXED_AMOUNT, FREE_ITEM
+  rewardValue     Float?               @map("reward_value") // Value associated with the reward type
+  isActive        Boolean              @default(true) @map("is_active")
+  validFrom       DateTime?            @map("valid_from") // Added validity period
+  validUntil      DateTime?            @map("valid_until") // Added validity period
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  transactions    LoyaltyTransaction[]
+  tenantId        String               @map("tenant_id") @db.Uuid
+
+  @@map("loyalty_programs")
+  @@index([tenantId])
+  @@index([isActive]) // Added index
+  @@index([name]) // Added index
+}
+
+model LoyaltyTransaction {
+  id              String               @id @default(uuid()) @db.Uuid
+  userId          String               @map("user_id") @db.Uuid
+  orderId         String?              @map("order_id") @db.Uuid // Optional link to order
+  programId       String               @map("program_id") @db.Uuid
+  pointsChange    Int                  @map("points_change") // Positive for earned/adjusted, negative for redeemed/expired
+  // Removed pointsEarned and pointsRedeemed, use pointsChange instead
+  transactionType LoyaltyTransactionType
+  description     String?              // Optional description (e.g., "Points expired", "Redeemed for $5 off")
+  createdAt       DateTime             @default(now())
+
+  user            User                 @relation(fields: [userId], references: [id])
+  order           Order?               @relation(fields: [orderId], references: [id])
+  program         LoyaltyProgram       @relation(fields: [programId], references: [id])
+
+  @@map("loyalty_transactions")
+  @@index([userId])
+  @@index([orderId])
+  @@index([programId]) // Added index
+  @@index([transactionType]) // Added index
+}
