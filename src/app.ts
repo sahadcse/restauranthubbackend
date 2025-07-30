@@ -17,6 +17,18 @@ const app = express();
 // Add request ID to each request for tracking
 app.use((req: Request, _res: Response, next: NextFunction) => {
   req.id = uuidv4();
+
+  // Add helper method for consistent IP address extraction
+  req.getClientIP = () => {
+    return (
+      req.ip ||
+      req.connection.remoteAddress ||
+      req.socket.remoteAddress ||
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+      "unknown"
+    );
+  };
+
   next();
 });
 

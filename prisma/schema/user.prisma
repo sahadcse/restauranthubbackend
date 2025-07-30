@@ -20,6 +20,10 @@ model User {
   consentGivenAt        DateTime?           @map("consent_given_at")
   sessions              Session[]
   addresses             Address[]           // Relation to Address model
+  avatarUrl             String?             @map("avatar_url") // URL to user's avatar image
+  provider              String?             // OAuth provider (e.g., Google, Facebook)
+  providerId            String?             @map("provider_id") // ID from the OAuth provider
+  providerAccountId     String?             @map("provider_account_id") // ID from the OAuth provider account
 
 
   notifications         Notification[]
@@ -66,6 +70,7 @@ model User {
   @@index([phoneNumber]) // Added index
   @@index([isActive]) // Added index
   @@index([updatedAt]) // Added index
+  @@index([lastLoginAt]) // Added index
 }
 
 model UserAudit {

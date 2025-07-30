@@ -23,8 +23,18 @@ declare global {
 
       // The validated route parameters
       validatedParams?: any;
+
+      // OAuth-specific properties
+      oauthProvider?: string;
+      oauthState?: string;
+
+      // Helper methods for IP address handling
+      getClientIP?: () => string;
     }
   }
+
+  // OAuth rate limiting storage
+  var oauthAttempts: Map<string, number[]>;
 }
 
 export {};

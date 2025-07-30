@@ -3,6 +3,7 @@ import { Router, Request, Response } from "express";
 // Import user routes
 import userRouter from "../domains/user/register/routes/user.routes";
 import authRouter from "../domains/user/auth/routes/auth.routes";
+import auth0Router from "../domains/user/auth/routes/auth0.routes";
 import systemRouter from "../domains/admin/system/system.routes";
 import restaurantRouter from "../domains/restaurant/routes/restaurant.routes";
 import orderRouter from "../domains/order/routes/order.routes";
@@ -53,6 +54,9 @@ router.use("/users", userRouter);
 
 // Auth routes
 router.use("/auth", authRouter);
+
+// OAuth routes
+router.use("/auth", auth0Router);
 
 // Admin system routes
 router.use("/admin/system", systemRouter);

@@ -39,6 +39,7 @@ model Session {
   refreshToken String?          @unique @map("refresh_token") // Optional refresh token
   ipAddress    String?          @map("ip_address") // Made optional
   deviceInfo   Json?            @map("device_info") @db.JsonB // Made optional
+  userAgent   String?          @map("user_agent") // Made optional
   expiresAt    DateTime         @map("expires_at")
   revokedAt    DateTime?        @map("revoked_at")
   createdAt    DateTime         @default(now()) @map("created_at")
