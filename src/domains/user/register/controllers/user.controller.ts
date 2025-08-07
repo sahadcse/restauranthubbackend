@@ -262,8 +262,12 @@ export const createFirstSuperAdmin = async (
     const { setupKey } = req.body;
     const SETUP_KEY = process.env.INITIAL_SETUP_KEY;
 
-    if (!SETUP_KEY || setupKey !== SETUP_KEY) {
-      return next(new AppError("Invalid or missing setup key", 403));
+    if (!SETUP_KEY) {
+      return next(new AppError("Missing setup key", 403));
+    }
+
+    if (setupKey !== SETUP_KEY) {
+      return next(new AppError("Invalid setup key", 403));
     }
 
     // Check if SUPER_ADMIN already exists
