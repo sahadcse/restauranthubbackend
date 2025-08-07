@@ -8,6 +8,7 @@ import { validateRequest } from "../../../../middleware/validation.middleware";
 import {
   userRegistrationSchema,
   emailSchema,
+  superAdminRegistrationSchema,
 } from "../../types/user.validation";
 import { UserRole } from "../../../../../prisma/generated/prisma";
 
@@ -57,7 +58,7 @@ router.post(
  */
 router.post(
   "/setup/super-admin",
-  validateRequest(userRegistrationSchema),
+  validateRequest(superAdminRegistrationSchema),
   userController.createFirstSuperAdmin
 );
 
