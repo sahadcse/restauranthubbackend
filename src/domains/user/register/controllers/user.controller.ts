@@ -373,12 +373,13 @@ export const verifyEmail = async (
       throw new AppError("Verification token is required", 400);
     }
 
-    await userService.verifyEmail(token);
+    const user = await userService.verifyEmail(token);
 
     res.status(200).json({
       status: "success",
       message:
         "Email verified successfully. You can now login to your account.",
+      data: user,
     });
   } catch (error) {
     next(error);

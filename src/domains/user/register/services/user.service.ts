@@ -326,7 +326,7 @@ export const registerUser = async (
 /**
  * Verify a user's email using the verification token
  */
-export const verifyEmail = async (token: string): Promise<void> => {
+export const verifyEmail = async (token: string): Promise<UserResponseDto> => {
   try {
     // Verify and decode the token
     const decoded = jwt.verify(
@@ -346,7 +346,7 @@ export const verifyEmail = async (token: string): Promise<void> => {
 
     if (user.accountStatus === AccountStatus.ACTIVE) {
       // Already verified
-      return;
+      return user;
     }
 
     // Update user status to active
@@ -388,6 +388,9 @@ export const verifyEmail = async (token: string): Promise<void> => {
       </div>
       `
     );
+
+    return user;
+
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
       throw new AppError("Invalid or expired verification token", 400);
