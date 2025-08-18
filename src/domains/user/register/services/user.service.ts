@@ -352,6 +352,21 @@ export const verifyEmail = async (token: string): Promise<UserResponseDto> => {
     // Update user status to active
     await userRepo.updateUserStatus(user.id, AccountStatus.ACTIVE);
 
+    // Clear email verification token
+    await userRepo.updateUserAttributes(user.id, {
+      emailVerification: {
+        token: null,
+        expiresAt: null,
+      },
+    });
+
+    user.accountStatus = AccountStatus.ACTIVE;
+
+    // Login the user
+    await userRepo.updateUserAttributes(user.id, {
+      lastLogin: new Date().toISOString(),
+    });
+
     // Send account activation notification
     try {
       await notificationIntegration.system.securityAlert(

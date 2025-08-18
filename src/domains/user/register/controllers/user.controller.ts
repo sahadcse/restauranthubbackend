@@ -375,11 +375,22 @@ export const verifyEmail = async (
 
     const user = await userService.verifyEmail(token);
 
+    // Generate a token and login the user and update the user Active status
+    const newToken = generateCustomToken(
+      {
+        userId: user.id,
+        email: user.email,
+        type: "access",
+      },
+      60 * 60 * 24 // 24 hours expiration
+    );
+
     res.status(200).json({
       status: "success",
       message:
         "Email verified successfully. You can now login to your account.",
       data: user,
+      token: newToken,
     });
   } catch (error) {
     next(error);
